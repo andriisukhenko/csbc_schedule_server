@@ -7,6 +7,12 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.11"
+fastapi = "^0.109.2"
+uvicorn = {extras = ["standart"], version = "^0.27.1"}
+sqlalchemy = "^2.0.26"
+psycopg2 = "^2.9.9"
+alembic = "^1.13.1"
+python-dotenv = "^1.0.1"
 
 
 [build-system]
