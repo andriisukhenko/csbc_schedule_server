@@ -16,7 +16,7 @@ class DBSession:
         self.Base = BaseModel
         self.SessionLocal = SessionLoc
     
-    def __call__(self) -> Generator[Session]:
+    def __call__(self) -> Generator[Session, None, None]:
         db: Session = self.SessionLocal()
         try:
             yield db
