@@ -1,8 +1,8 @@
 """Init
 
-Revision ID: 16a888492566
+Revision ID: abae8ed5029c
 Revises: 
-Create Date: 2024-02-12 14:07:39.520419
+Create Date: 2024-02-12 21:04:40.140070
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '16a888492566'
+revision: str = 'abae8ed5029c'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -33,7 +33,7 @@ def upgrade() -> None:
     sa.Column('name', sa.String(length=20), nullable=False),
     sa.Column('description', sa.String(), nullable=False),
     sa.Column('type', sa.Enum(name='classroom_type_enum'), nullable=False),
-    sa.Column('deleted_at', sa.String(), nullable=False),
+    sa.Column('deleted_at', sa.DateTime(timezone=True), nullable=True),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('name')
     )
@@ -42,7 +42,7 @@ def upgrade() -> None:
     sa.Column('name', sa.String(length=10), nullable=False),
     sa.Column('year_start', sa.SmallInteger(), nullable=False),
     sa.Column('year_end', sa.SmallInteger(), nullable=False),
-    sa.Column('deleted_at', sa.DateTime(), nullable=False),
+    sa.Column('deleted_at', sa.DateTime(timezone=True), nullable=True),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('name')
     )
@@ -50,13 +50,14 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(), nullable=False),
     sa.Column('description', sa.String(), nullable=True),
-    sa.Column('deleted_at', sa.DateTime(), nullable=False),
+    sa.Column('deleted_at', sa.DateTime(timezone=True), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('users',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('email', sa.String(length=50), nullable=False),
     sa.Column('username', sa.String(length=20), nullable=False),
+    sa.Column('password', sa.String(), nullable=False),
     sa.Column('phone_number', sa.String(length=20), nullable=True),
     sa.Column('first_name', sa.String(length=20), nullable=False),
     sa.Column('second_name', sa.String(length=20), nullable=True),
@@ -64,9 +65,9 @@ def upgrade() -> None:
     sa.Column('avatart', sa.String(), nullable=True),
     sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
     sa.Column('updated_at', sa.DateTime(timezone=True), nullable=True),
-    sa.Column('deleted_at', sa.DateTime(timezone=True), nullable=False),
-    sa.Column('approved_at', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('approved_at', sa.DateTime(timezone=True), nullable=True),
     sa.Column('confirmed_at', sa.DateTime(timezone=True), nullable=True),
+    sa.Column('deleted_at', sa.DateTime(timezone=True), nullable=True),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('email'),
     sa.UniqueConstraint('phone_number'),
@@ -75,8 +76,9 @@ def upgrade() -> None:
     op.create_table('accounts',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),
-    sa.Column('type', sa.Enum(name='account_type'), nullable=False),
-    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
+    sa.Column('type', sa.Enum(name='account_type_enum'), nullable=False),
+    sa.Column('deleted_at', sa.DateTime(timezone=True), nullable=True),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('group_m2m_subject',
@@ -85,6 +87,15 @@ def upgrade() -> None:
     sa.Column('subject_id', sa.Integer(), nullable=True),
     sa.ForeignKeyConstraint(['group_id'], ['groups.id'], ondelete='CASCADE'),
     sa.ForeignKeyConstraint(['subject_id'], ['subjects.id'], ondelete='CASCADE'),
+    sa.PrimaryKeyConstraint('id')
+    )
+    op.create_table('tokens',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('token', sa.String(), nullable=False),
+    sa.Column('scope', sa.String(length=10), nullable=False),
+    sa.Column('expired_at', sa.DateTime(), nullable=False),
+    sa.Column('user_id', sa.Integer(), nullable=False),
+    sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('admins_accounts',
@@ -161,6 +172,7 @@ def downgrade() -> None:
     op.drop_table('students_accounts')
     op.drop_table('employees_accounts')
     op.drop_table('admins_accounts')
+    op.drop_table('tokens')
     op.drop_table('group_m2m_subject')
     op.drop_table('accounts')
     op.drop_table('users')

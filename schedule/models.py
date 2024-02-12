@@ -1,7 +1,7 @@
-from app.db import db
-from sqlalchemy import ForeignKey, Integer, SmallInteger, Time, String, DateTime, UniqueConstraint, Table, Column, Enum as SQLEnum
+from app.db import db, SoftDeleteMixin
+from sqlalchemy import ForeignKey, Integer, SmallInteger, Time, String, UniqueConstraint, Table, Column, Enum as SQLEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from datetime import time, datetime
+from datetime import time
 from typing import List, TYPE_CHECKING, get_args
 from schedule import types as schedule_types
 
@@ -41,26 +41,24 @@ class Bell(db.Base):
     end_at: Mapped[time] = mapped_column(Time, nullable=False)
     lessons: Mapped[List["Lesson"]] = relationship(back_populates="bell")
 
-class Classroom(db.Base):
+class Classroom(db.Base, SoftDeleteMixin):
     __tablename__ = "classrooms"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String(20), unique=True, nullable=False)
     description: Mapped[str] = mapped_column(String, nullable=False)
     type: Mapped[schedule_types.ScheduleLessonsTypes] = mapped_column(SQLEnum(name="classroom_type_enum"), nullable=False)
     lessons: Mapped[List["Lesson"]] = relationship(back_populates="classroom")
-    deleted_at: Mapped[datetime] = mapped_column(String, nullable=False)
 
-class Subject(db.Base):
+class Subject(db.Base, SoftDeleteMixin):
     __tablename__ = "subjects"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String, nullable=False)
     description: Mapped[str] = mapped_column(String, nullable=True)
-    lessons: Mapped[str] = relationship(back_populates="subject")
+    lessons: Mapped[List["Lesson"]] = relationship(back_populates="subject")
     teachers: Mapped[List["TeacherAccount"]] = relationship(back_populates="subjects", secondary=teacher_subject_table)
-    groups: Mapped[List["Group"]] = relationship(back_populates="groups", secondary=group_subject_table)
-    deleted_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    groups: Mapped[List["Group"]] = relationship(back_populates="subjects", secondary=group_subject_table)
 
-class Group(db.Base):
+class Group(db.Base, SoftDeleteMixin):
     __tablename__ = "groups"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String(10), unique=True)
@@ -68,8 +66,7 @@ class Group(db.Base):
     year_end: Mapped[int] = mapped_column(SmallInteger, nullable=False)
     subjects: Mapped[List[Subject]] = relationship(back_populates="groups", secondary=group_subject_table)
     lessons: Mapped[List["Lesson"]] = relationship(back_populates="groups", secondary=group_lesson_table)
-    students: Mapped[List["StudentAccount"]] = relationship(back_populates="students")
-    deleted_at: Mapped[int] = mapped_column(DateTime, nullable=False)
+    students: Mapped[List["StudentAccount"]] = relationship(back_populates="group")
 
 class Lesson(db.Base):
     __tablename__ = "lessons"
@@ -79,15 +76,15 @@ class Lesson(db.Base):
     semester: Mapped[schedule_types.ScheduleSemesterOptions] = mapped_column(SQLEnum(name="lesson_semester_enum"), nullable=False)
     year: Mapped[int] = mapped_column(SmallInteger, nullable=False)
     teacher_id: Mapped[int] = mapped_column(Integer, ForeignKey("teachers_accounts.id", ondelete="CASCADE"))
-    teacher: Mapped["TeacherAccount"] = relationship(back_populates="lessons", foreign_keys=["teacher_id"])
+    teacher: Mapped["TeacherAccount"] = relationship(back_populates="lessons", foreign_keys=[teacher_id])
     classroom_id: Mapped[int] = mapped_column(Integer, ForeignKey("classrooms.id", ondelete="CASCADE"))
-    classroom: Mapped[Classroom] = relationship(back_populates="lessons", foreign_keys=["classroom_id"])
+    classroom: Mapped[Classroom] = relationship(back_populates="lessons", foreign_keys=[classroom_id])
     group_id: Mapped[int] = mapped_column(Integer, ForeignKey("groups.id", ondelete="CASCADE"))
     groups: Mapped[List[Group]] = relationship(back_populates="lessons", secondary=group_lesson_table)
     subject_id: Mapped[str] = mapped_column(Integer, ForeignKey("subjects.id", ondelete="CASCADE"))
-    subject: Mapped[Subject] = relationship(back_populates="lessons", foreign_keys=["subject_id"])
+    subject: Mapped[Subject] = relationship(back_populates="lessons", foreign_keys=[subject_id])
     bell_id: Mapped[str] = mapped_column(Integer, ForeignKey("bells.id", ondelete="CASCADE"))
-    bell: Mapped[Bell] = relationship(back_populates="lessons", foreign_keys=["bell_id"])
+    bell: Mapped[Bell] = relationship(back_populates="lessons", foreign_keys=[bell_id])
     type: Mapped[schedule_types.ScheduleLessonsTypes] = mapped_column(SQLEnum(name="lesson_type_enum"), nullable=False)
     description: Mapped[str] = mapped_column(String, nullable=False)
     __table_args__ = (
