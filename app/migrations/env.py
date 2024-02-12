@@ -7,6 +7,7 @@ from alembic import context
 
 from app.db import db
 from app.settings import settings
+import users.models
 import schedule.models
 
 # this is the Alembic Config object, which provides
