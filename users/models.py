@@ -74,8 +74,8 @@ class EmployeeAccount(Account):
 class Token(db.Base):
     __tablename__ = "tokens"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    token: Mapped[str] = mapped_column(String, nullable=False)
-    scope: Mapped[str] = mapped_column(String(10), nullable=False)
+    access: Mapped[str] = mapped_column(String, nullable=False)
+    refresh: Mapped[str] = mapped_column(String, nullable=False)
     expired_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey('users.id', ondelete='CASCADE'), onupdate='CASCADE')
     user: Mapped["User"] = relationship(back_populates="tokens")

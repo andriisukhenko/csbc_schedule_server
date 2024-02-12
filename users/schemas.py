@@ -2,6 +2,7 @@ from pydantic import BaseModel, Field, EmailStr
 from pydantic_extra_types.phone_numbers import PhoneNumber
 from app.settings import settings
 from typing import Optional
+from datetime import datetime
 
 PhoneNumber.phone_format = settings.app.PHONE_FORMAT
 
@@ -25,7 +26,6 @@ class UserModel(BaseModel):
 
 class UserBaseResponse(UserModel):
     id: int
-    password: str = Field(max_length=250)
 
     class Config:
         from_attributes = True
@@ -33,7 +33,7 @@ class UserBaseResponse(UserModel):
 
 class TokenModel(BaseModel):
     token: str
-    expired_at: str
+    expired_at: datetime
 
 class TokenPairModel(BaseModel):
     access: TokenModel

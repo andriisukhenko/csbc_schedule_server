@@ -71,8 +71,8 @@ class Token:
 
 class Auth:
     oauth2_scheme = OAuth2PasswordBearer(settings.token.URL)
-    user_model = User
-    tokens_model = TokenDBModel
+    UserModel = User
+    TokensModel = TokenDBModel
     invalid_credential_error = HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Invalid username or password')
     invalid_refresh_token_error = HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Invalid refresh token')
     credentionals_exception=HTTPException(
@@ -85,7 +85,7 @@ class Auth:
         self.password = password
         self.token = token
 
-    def validate(self, user: user_model | None, credentials: OAuth2PasswordRequestForm) -> bool:
+    def validate(self, user: UserModel | None, credentials: OAuth2PasswordRequestForm) -> bool:
         if user is None:
             return False
         if not self.password.verify(credentials.password, user.password):
@@ -94,52 +94,54 @@ class Auth:
     
     async def refresh(self, refres_token_str: str, db: Session) -> schemas.TokenPairModel:
         payload = await self.token.decode_refresh(refres_token_str)
-        refres_token = db.query(self.tokens_model).filter(
-            self.tokens_model.token==refres_token_str,
-            self.tokens_model.scope==TokenScopes.REFRESH.value
-            ).options(joinedload(self.tokens_model.user)).first()
+        refres_token = db.query(self.TokensModel).filter(
+            self.TokensModel.refresh==refres_token_str
+            ).options(joinedload(self.TokensModel.user)).first()
         user = await self.__get_user(payload["email"], db)
         if refres_token:
             db.delete(refres_token)
             db.commit()
-        print(user, refres_token)
         if user is None or refres_token is None or refres_token.user != user:
             raise self.credentionals_exception
         return await self.__generate_tokens(user, db)
         
-    async def authenticate(self, credentials: OAuth2PasswordRequestForm, db: Session) -> schemas.TokenModel:
+    async def authenticate(self, credentials: OAuth2PasswordRequestForm, db: Session) -> schemas.TokenPairModel:
         user = await self.__get_user(credentials.username, db)
         if not self.validate(user, credentials):
             raise self.invalid_credential_error
         return await self.__generate_tokens(user, db)
     
-    async def __generate_tokens(self, user: user_model, db: Session) -> schemas.TokenPairModel:
-        access_token_data = await self.token.create_access({"email": user.email})
-        refresh_token_data = await self.token.create_refresh({"email": user.email})
-        refresh_token = self.tokens_model(**refresh_token_data)
-        access_token = self.tokens_model(**access_token_data)
-        user.tokens.append(refresh_token)
-        user.tokens.append(access_token)
+    async def logout(self, token_str: str, db: Session) -> None:
+        token = db.query(self.TokensModel).filter(self.TokensModel.access == token_str).first()
+        if token:
+            db.delete(token)
+            db.commit()
+    
+    async def __generate_tokens(self, user: UserModel, db: Session) -> schemas.TokenPairModel:
+        access_token = await self.token.create_access({"email": user.email})
+        refresh_token = await self.token.create_refresh({"email": user.email})
+        token = self.TokensModel(access=access_token["token"], refresh=refresh_token["token"], expired_at=refresh_token["expired_at"])
+        user.tokens.append(token)
         db.commit()
         return { 
-            "access": { "token": access_token.token, "expired": access_token.expired_at }, 
-            "refresh": { "token": refresh_token.token, "expired": refresh_token.expired_at }, 
+            "access": { "token": access_token["token"], "expired_at": access_token["expired_at"] }, 
+            "refresh": { "token": refresh_token["token"], "expired_at": refresh_token["expired_at"] }, 
             "type": "bearer"
         }
         
-    async def __get_user(self, username: str, db: Session) -> user_model | None:
-        return db.query(self.user_model).filter(or_(
-            self.user_model.email == username,
-            self.user_model.username == username,
-            self.user_model.phone_number == username
+    async def __get_user(self, username: str, db: Session) -> UserModel | None:
+        return db.query(self.UserModel).filter(or_(
+            self.UserModel.email == username,
+            self.UserModel.username == username,
+            self.UserModel.phone_number == username
             )).first()
 
-    async def __call__(self, token: str = Depends(oauth2_scheme), db: Session = Depends(db)) -> user_model:
+    async def __call__(self, token: str = Depends(oauth2_scheme), db: Session = Depends(db)) -> UserModel:
         pyload = await self.token.decode_access(token)
         if pyload["email"] is None:
             raise self.credentionals_exception
         user = await self.__get_user(pyload["email"], db)
-        stored_token = db.query(self.tokens_model).filter(self.user_model == user, self.tokens_model.scope == TokenScopes.ACCESS.value).first()
+        stored_token = db.query(self.TokensModel).filter(self.TokensModel.user == user, self.TokensModel.access == token).first()
         if stored_token is None:
             raise self.credentionals_exception
         return user
