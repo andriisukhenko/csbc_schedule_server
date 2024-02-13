@@ -1,5 +1,6 @@
 from dotenv import load_dotenv
 from dataclasses import dataclass
+from pathlib import Path
 import os
 
 # load env variables
@@ -11,8 +12,9 @@ class APPSettings:
     VERSION: str = os.getenv("APP_VERSION")
     NAME: str = os.getenv("APP_NAME")
     HOST: str = os.getenv("APP_HOST")
-    PORT: int = int(os.getenv("APP_PORT"))
+    PORT: int = int(os.getenv("APP_PORT", '8000'))
     SECRET: str = os.getenv("APP_SECRET")
+    ROOT: str = Path(__file__).parent.parent
     ENV: str = os.getenv("APP_ENV")
     URL_PREFIX: str = '/api'
     PHONE_FORMAT: str = 'E164'
@@ -25,7 +27,7 @@ class DBSettings:
     USER: str = os.getenv("DB_USER")
     PASSWORD: str = os.getenv("DB_PASSWORD")
     HOST: str = os.getenv("DB_HOST")
-    PORT: int = int(os.getenv("DB_PORT"))
+    PORT: int = int(os.getenv("DB_PORT", '5432'))
 
     @property
     def CONNECTION_STRING(self):
