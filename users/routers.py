@@ -8,26 +8,26 @@ from app.services.auth import auth
 
 security = HTTPBearer()
 
-auth_router = APIRouter(prefix="/auth", tags=["auth"])
+session_router = APIRouter(prefix="/session", tags=["session"])
 user_router = APIRouter(prefix="/users", tags=["users"])
 
 UserControllerDep = Annotated[UserController, Depends(UserController)]
 
-@auth_router.post("/login", response_model=schemas.TokenPairModel)
-async def login(db: DBConnectionDep, body: OAuth2PasswordRequestForm = Depends()):
+@session_router.post("/", response_model=schemas.TokenPairModel)
+async def create_session(db: DBConnectionDep, body: OAuth2PasswordRequestForm = Depends()):
     return await auth.authenticate(body, db)
 
-@auth_router.post("/logout", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(auth)])
-async def logout(db: DBConnectionDep, token: str = Depends(auth.oauth2_scheme)):
-    return await auth.logout(token, db)
+@user_router.get("/", response_model=schemas.UserBaseResponse)
+async def read_session(user: AuthDep):
+    return user
 
-@auth_router.post("/refresh-token", response_model=schemas.TokenPairModel)
-async def refresh_token(db: DBConnectionDep, credentials: HTTPAuthorizationCredentials = Security(security)):
+@session_router.put("/", response_model=schemas.TokenPairModel)
+async def update_session(db: DBConnectionDep, credentials: HTTPAuthorizationCredentials = Security(security)):
     return await auth.refresh(credentials.credentials, db)
 
-@user_router.get("/current", response_model=schemas.UserBaseResponse)
-async def current_user(user: AuthDep):
-    return user
+@session_router.delete("/", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(auth)])
+async def delete_session(db: DBConnectionDep, token: str = Depends(auth.oauth2_scheme)):
+    return await auth.logout(token, db)
 
 @user_router.post("/", response_model=schemas.UserBaseResponse, status_code=status.HTTP_201_CREATED)
 async def create_user(controller: UserControllerDep, db: DBConnectionDep, body: schemas.UserCreationModel):

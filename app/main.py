@@ -1,18 +1,19 @@
 from fastapi import FastAPI, APIRouter
 from app.settings import settings
 from schedule.routers import schedule_router
-from users.routers import user_router, auth_router
+from users.routers import user_router, session_router
+from datetime import datetime, timezone
 import uvicorn
 
 app = FastAPI()
 
 base_router = APIRouter(tags=['base'])
 
-routers = [base_router, schedule_router, auth_router, user_router]
+routers = [base_router, session_router, user_router, schedule_router]
 
 @base_router.get("/")
 def status():
-    return {"version": settings.app.VERSION, "name": settings.app.NAME, "status": "ok", "env": settings.app.ENV}
+    return {"version": settings.app.VERSION, "name": settings.app.NAME, "status": "ok", "env": settings.app.ENV, "datetime": datetime.utcnow().strftime(settings.app.DATE_FORMAT)}
 
 [app.include_router(router, prefix=settings.app.URL_PREFIX) for router in routers]
 

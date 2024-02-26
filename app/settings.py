@@ -18,6 +18,7 @@ class APPSettings:
     ENV: str = os.getenv("APP_ENV")
     URL_PREFIX: str = '/api'
     PHONE_FORMAT: str = 'E164'
+    DATE_FORMAT: str = '%d-%m-%Y %H:%M:%S'
 
 # DB VARIABLES
 @dataclass(frozen=True)
