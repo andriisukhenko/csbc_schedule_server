@@ -12,6 +12,9 @@ teacher_subject_table = Table(
     "teacher_m2m_subject",
     db.Base.metadata,
     Column("id", Integer, primary_key=True),
+    Column("year", SmallInteger, nullable=False),
+    Column("semester", SQLEnum(*get_args(schedule_types.ScheduleSemesterOptions), name="subject_semester_enum"), nullable=False),
+    Column("payload", Integer, nullable=False),
     Column("teacher_id", Integer, ForeignKey("teachers_accounts.id", ondelete="CASCADE")),
     Column("subject_id", Integer, ForeignKey("subjects.id", ondelete="CASCADE"))
 )
