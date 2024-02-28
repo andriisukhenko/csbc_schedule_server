@@ -12,7 +12,7 @@ base_router = APIRouter(tags=['base'])
 routers = [base_router, session_router, user_router, schedule_router]
 
 @base_router.get("/")
-def status(test_query: str = "none"):
+def status():
     return {
         "version": settings.app.VERSION,
         "name": settings.app.NAME,
