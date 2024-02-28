@@ -17,7 +17,7 @@ UserControllerDep = Annotated[UserController, Depends(UserController)]
 async def create_session(db: DBConnectionDep, body: OAuth2PasswordRequestForm = Depends()):
     return await auth.authenticate(body, db)
 
-@user_router.get("/", response_model=schemas.UserBaseResponse)
+@session_router.get("/", response_model=schemas.UserBaseResponse)
 async def read_session(user: AuthDep):
     return user
 
