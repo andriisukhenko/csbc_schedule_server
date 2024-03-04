@@ -13,7 +13,7 @@ user_router = APIRouter(prefix="/users", tags=["users"])
 
 UserControllerDep = Annotated[UserController, Depends(UserController)]
 
-@session_router.post("/", response_model=schemas.TokenPairModel)
+@session_router.post("/", response_model=schemas.TokenPairModel, status_code=status.HTTP_201_CREATED)
 async def create_session(db: DBConnectionDep, body: OAuth2PasswordRequestForm = Depends()):
     return await auth.authenticate(body, db)
 

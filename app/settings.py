@@ -41,7 +41,7 @@ class TokenSettings:
     DEFAULT_EXPIRED: int = 120
     ACCESS_EXPIRED: int = 15
     REFRESH_EXPIRED: int = 7 * 1440
-    URL: str = '/api/auth/login'
+    URL: str = '/api/session/'
 
 # Setting collection
 @dataclass(frozen=True)
